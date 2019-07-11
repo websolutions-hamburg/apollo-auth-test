@@ -11,35 +11,37 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
 
   node:
-    image: node:12.5.0-alpine
-    command: >
-      sh -c "npm install
-      && npm run start
-      "
-    working_dir: /home/node/app
+    build: ./
+    image: node_image
     ports:
       - "4000:4000"
-    labels:
-      traefik.frontend.rule: "Host:node.local"
     volumes:
       - ./app:/home/node/app
       - node_modules:/home/node/app/node_modules
+    labels:
+      traefik.frontend.rule: "Host:node.local"
 
   node2:
-    image: node:12.5.0-alpine
-    command: npm run start
-    working_dir: /home/node/app
+    image: node_image
     depends_on:
       - node
     ports:
       - "4004:4000"
-    labels:
-      traefik.frontend.rule: "Host:node2.local"
-      traefik.frontend.auth.basic.users: "test:$$apr1$$PcLSHB5h$$p/35NmUIT/H7NP58XbvWt0" # user: test, pwd: test
-      # note additional symbol "$" makes escaping.
     volumes:
       - ./app:/home/node/app
       - node_modules:/home/node/app/node_modules
-
+    labels:
+      traefik.auth.frontend.rule: "Host:node2.local"
+      traefik.frontend.headers.customResponseHeaders: "Access-Control-Allow-Origin:http://node.local||Access-Control-Allow-Method:GET,POST,PUT,PATCH,DELETE,OPTIONS||Access-Control-Allow-Credentials:true"
+      traefik.frontend.headers.customRequestHeaders: "Access-Control-Allow-Origin:http://node.local||Access-Control-Allow-Credentials:true"
+#      traefik.frontend.headers.customResponseHeaders: "Access-Control-Allow-Origin:*||Access-Control-Allow-Method:GET,POST,PUT,PATCH,DELETE,OPTIONS||Access-Control-Allow-Headers:apikey,authorization,content-type||Access-Control-Allow-Credentials:true"
+#      traefik.frontend.headers.customRequestHeaders: "Access-Control-Allow-Origin:*"
+#      traefik.frontend.whiteList.sourceRange: "127.0.0.1"
+#      traefik.frontend.passHostHeader: true
+#      traefik.frontend.whiteList.useXForwardedFor: "true"
+#      traefik.frontend.auth.basic.removeHeader: "true"
+      traefik.auth.frontend.auth.basic.users: "test:$$apr1$$PcLSHB5h$$p/35NmUIT/H7NP58XbvWt0"  # user: test, pwd: test
+                                                                                          # note additional symbol "$" makes escaping.
+#      traefik.noauth.frontend.rule: "Method:OPTIONS,Host:node2.local"
 volumes:
   node_modules:
